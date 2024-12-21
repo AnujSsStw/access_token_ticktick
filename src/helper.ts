@@ -8,8 +8,13 @@ export type Task = {
   timeZone: string;
   isAllDay: boolean;
   priority: number;
-  status: number;
-  tags: string[];
+  status: number; // Normal: 0, Completed: 2
+
+  completedTime?: string; // only show if we tick the task and retick it
+  dueDate?: string;
+  repeatFlag?: string;
+  startDate?: string;
+  tags?: string[];
 };
 
 export type Project = {
@@ -56,4 +61,38 @@ export async function getAllProjectTasks(
     console.error(error);
     return null;
   }
+}
+
+export async function getMultipleProjectTasks(
+  accessToken: string,
+  projectIds: string[],
+) {
+  const tasks = await Promise.all(
+    projectIds.map((id) => getAllProjectTasks(accessToken, id)),
+  );
+
+  const res = tasks
+    .filter((t) => t !== null)
+    .map((task) => {
+      return task.tasks.map((t) => {
+        return {
+          externalId: t.id,
+          taskListId: t.projectId,
+          globalUID: `ticktick_${t.id}`,
+          externalPriority: t.priority,
+          externalOrder: t.sortOrder,
+          title: t.title,
+          description: t.content,
+          createdTime: t.startDate ?? null,
+          createdTimeZone: t.timeZone,
+          dueTime: t.dueDate ?? null,
+          dueTimeZone: t.timeZone,
+          isRecurring: t.repeatFlag !== null,
+          status: t.status === 0 ? "needsAction" : "completed",
+          etag: t.tags ? t.tags.join(",") : null,
+        };
+      });
+    });
+
+  return res.flat();
 }

@@ -2,11 +2,13 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
 import Link from "next/link";
 import { useState } from "react";
-import { getUserProjects, Project } from "~/helper";
+import { getMultipleProjectTasks, getUserProjects, Project } from "~/helper";
 
 export default function Home() {
   const { data: session } = useSession();
   const [projects, setProjects] = useState<Project[]>([]);
+
+  const [d, setD] = useState<any>(null);
 
   return (
     <div>
@@ -42,6 +44,30 @@ export default function Home() {
           </Link>
         </div>
       ))}
+
+      <button
+        className="mt-3 block rounded bg-slate-600 p-4"
+        onClick={async () => {
+          if (!session) {
+            alert("You need to sign in first");
+            return;
+          }
+          if (projects.length === 0) {
+            alert(
+              "You need to fetch projects first. Click on 'List all projects'",
+            );
+            return;
+          }
+          const data = await getMultipleProjectTasks(
+            session.accessToken!,
+            projects.map((p) => p.id),
+          );
+          setD(data);
+        }}
+      >
+        Get all project data
+      </button>
+      {d && <pre>{JSON.stringify(d, null, 2)}</pre>}
     </div>
   );
 }

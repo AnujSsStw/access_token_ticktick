@@ -64,3 +64,4 @@ def complete_task(project_id: str, task_id: str):
 
 
 print(get_user_project())
+print(get_project_with_data("67669b188f08288435f82763"))
