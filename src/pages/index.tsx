@@ -1,37 +1,47 @@
-import { signIn, signOut } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
 import Link from "next/link";
-// import { signIn, signOut } from "~/server/auth";
-// import { signIn, signOut } from "next-auth/react";
+import { useState } from "react";
+import { getUserProjects, Project } from "~/helper";
 
 export default function Home() {
+  const { data: session } = useSession();
+  const [projects, setProjects] = useState<Project[]>([]);
+
   return (
     <div>
-      <button onClick={() => signOut()}>Sign out</button>;
+      <nav>
+        {!session ? (
+          <button onClick={() => signIn("ticktick")}>Sign in</button>
+        ) : (
+          <button onClick={() => signOut()}>Sign out</button>
+        )}
+      </nav>
       <button
+        className="rounded bg-slate-600 p-4"
         onClick={async () => {
-          try {
-            const result = await signIn("ticktick", { redirectTo: "/" });
-            console.log(result);
-          } catch (error) {
-            console.error(error);
+          if (!session) {
+            alert("You need to sign in first");
+            return;
           }
+          const data = await getUserProjects(session.accessToken!);
+          if (!data) {
+            alert("Failed to fetch projects");
+            return;
+          }
+          setProjects(data);
         }}
       >
-        Sign In
+        List all projects
       </button>
-      <button
-        onClick={async () => {
-          try {
-            const result = await signIn("", { redirectTo: "/" });
-            console.log(result);
-          } catch (error) {
-            console.error(error);
-          }
-        }}
-      >
-        Sign In by viea
-      </button>
+      {projects.map((project) => (
+        <div key={project.id}>
+          <Link className="flex gap-2" href={`/project/${project.id}`}>
+            <div>Project name: {project.name}</div>
+            <div>id: {project.id}</div>
+          </Link>
+        </div>
+      ))}
     </div>
   );
 }
